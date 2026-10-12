@@ -1,6 +1,6 @@
 ---
 name: bambu-3mf
-description: 코드로 만든 STL 부품을 Bambu Lab P2S 로 바로 뽑을 수 있는 Bambu Studio 프로젝트(.3mf)로 만든다. 재질(PLA·PETG·TPU·ABS·CF), plate, process preset, 부품별 설정(벽·infill·support·brim), 출력 방향, plate 배치를 Bambu Studio 번들 profile·Bambu Lab Wiki 근거로 정하고, Studio CLI 로 평탄화한 system profile 을 넣어 export → mesh·설정 검사 → plate 별 slice(시간·무게)까지 한 번에 돌린다. "3MF 만들어줘", "출력 파일 만들어줘", "Bambu Studio 프로젝트로", "바로 뽑을 수 있게", "슬라이스 설정 넣어줘", "필라멘트 뭐로 뽑아", "PETG 로 바꿔", "벽 늘려줘", "출력 시간 얼마나 걸려", make_3mf·build_bambu_project 스크립트를 새로 만들거나 고칠 때 쓴다. 형상 정리는 print-tidy, 뷰어는 design-view 스킬.
+description: 코드로 만든 STL 부품을 Bambu Lab P2S 로 바로 뽑을 수 있는 Bambu Studio 프로젝트(.3mf)로 만든다. 부품마다 역할·하중·맞물림·환경을 정리한 부품 카드에서 재질(PLA·PETG·TPU·ABS·CF), plate, process preset, 부품별 설정(벽·infill·support·brim), 출력 방향, plate 배치를 Bambu Studio 번들 profile·Bambu Lab Wiki 근거로 정하고, Studio CLI 로 평탄화한 system profile 을 넣어 export → mesh·설정 검사 → plate 별 slice(시간·무게)까지 한 번에 돌린다. "3MF 만들어줘", "출력 파일 만들어줘", "Bambu Studio 프로젝트로", "바로 뽑을 수 있게", "슬라이스 설정 넣어줘", "필라멘트 뭐로 뽑아", "PETG 로 바꿔", "벽 늘려줘", "출력 시간 얼마나 걸려", "이 3MF 검토해줘", "설정 맞는지 봐줘", make_3mf·build_bambu_project 스크립트를 새로 만들거나 고칠 때, 이미 만든 3MF 를 검토할 때(scripts/review_3mf.py) 쓴다. 형상 정리는 print-tidy, 뷰어는 design-view 스킬.
 ---
 
 # bambu-3mf — Bambu Studio 출력 프로젝트 생성
