@@ -32,8 +32,10 @@ def parts() -> Project:
     """TODO(project): the parts, each on the face it prints on."""
     return Project(
         plates=[Plate("parts", [
-            Part(stl("bracket"), down=(0.0, 0.0, -1.0)),
-            Part(stl("cover"), down=(0.0, 0.0, 1.0), params={"wall_loops": "2"}),
+            Part(stl("bracket"), down=(0.0, 0.0, -1.0),
+                 role="carries the servo: horn torque twists it, four self-tapping screws into its bosses"),
+            Part(stl("cover"), down=(0.0, 0.0, 1.0), params={"wall_loops": "2"},
+                 role="covers the board, no load; its outside shows"),
         ])],
         filaments=[PLA],
         process=PROCESS)

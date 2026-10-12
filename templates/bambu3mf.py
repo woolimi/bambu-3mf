@@ -164,6 +164,9 @@ class Part:
     at: tuple[float, float] | None = None
     #: the name the studio shows; the STL's stem by default
     name: str = ""
+    #: what the part does - what it carries, how it is loaded, what mates with it, where it works - the reason
+    #: for its material and settings; printed with the build's report
+    role: str = ""
 
 
 @dataclass
@@ -505,6 +508,10 @@ def report(out: Path, project: Project, plates: list[Sliced]) -> None:
     print(f"{out.name}: {project.printer} / {project.base_process} + {changed} / {project.bed_type}")
     for i, f in enumerate(project.filaments, start=1):
         print(f"  filament {i}: {f.profile} {f.colour}")
-    for p in plates:
+    for p, plate in zip(plates, project.plates):
         used = ", ".join(f"f{i} {m:.1f} m" for i, m in sorted(p.metres.items()))
         print(f"  plate {p.plate}: {round(p.minutes) // 60} h {round(p.minutes) % 60:02d} min, {p.grams:.1f} g ({used})")
+        for part in plate.parts:
+            own = ", ".join(f"{k} {v}" for k, v in part.params.items())
+            print(f"    {part.name or part.stl.stem} (f{part.filament}){': ' + part.role if part.role else ''}"
+                  f"{' [' + own + ']' if own else ''}")

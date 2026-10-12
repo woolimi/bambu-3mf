@@ -20,8 +20,16 @@ left in English. The Python module and its docstrings are in English.
 - **Checks before writing.** The build stops if the studio repaired or dropped triangles, if a global-only key was
   set on an object, if a process key is misspelled, if a filament cannot stick to the chosen plate, or if a plate
   does not slice. On success it prints each plate's time, weight and filament length.
-- **Guidance.** It picks material, plate, base preset and overrides in a fixed order, with P2S profile values and
-  rules of thumb in `references/print-settings.md`. Project-file internals and pitfalls are in
+- **Settings from what each part does.** Before any setting, each part gets a card: what it carries, how it is
+  loaded, what mates with it (self-tapping screws, press-fit pockets, snaps, faces on the bed), and where it works
+  (heat, outdoors, in the hand). Material, walls, infill, support, brim and orientation follow from the card.
+  `Part.role` keeps the card's summary next to the settings in the build report. P2S profile values and rules
+  of thumb are in `references/print-settings.md`.
+- **Review of existing projects.** `scripts/review_3mf.py` reads any `.3mf` the way the GUI does: the system
+  preset plus the listed changes, each object's own settings and footprint, and a slice with the flattened
+  system profiles. It flags plates the printer does not take, keys an object cannot hold, repaired meshes,
+  tall parts on narrow brims, and support turned off over downward faces.
+- **Internals.** Project-file structure, the CLI's assemble list, and the pitfalls found on the way are in
   `references/3mf-internals.md`.
 
 ## Install
@@ -36,8 +44,14 @@ Requirements:
 
 ## Use
 
-Ask Claude Code for a 3MF of your printed parts ("make a 3MF of these parts", "출력 파일 만들어줘"), or use the
-templates directly:
+Ask Claude Code for a 3MF of your printed parts ("make a 3MF of these parts", "출력 파일 만들어줘") or for a
+review of one ("review this 3MF", "이 3MF 검토해줘"), or use the files directly:
+
+```bash
+python3 ~/.claude/skills/bambu-3mf/scripts/review_3mf.py print/*.3mf
+```
+
+To write projects from your own build:
 
 1. Copy `templates/bambu3mf.py` and `templates/make_3mf.py` into your repo's `scripts/`.
 2. Add `studio`, `studio_profiles` and `print` paths to your `config.py` (`SKILL.md` §1 has the snippet).

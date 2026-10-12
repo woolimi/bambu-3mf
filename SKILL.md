@@ -17,6 +17,7 @@ GUI 가 읽는 방식대로 설정 목록을 고치고, mesh·설정을 검사�
 | `templates/make_3mf.py` | 프로젝트별 정의 예시. `PROJECTS` 의 함수가 `Project` 를 돌려준다 |
 | `references/print-settings.md` | 재질별 P2S profile 값, 재질 고르기, plate, process 조정 방향, support, warping, 건조 |
 | `references/3mf-internals.md` | 3MF zip 구성, 설정 key, CLI 와 assemble list 형식, profile 평탄화, 함정 모음 |
+| `scripts/review_3mf.py` | 기존 3MF 검토: GUI 가 쓸 설정, 개체별 설정·형상, flag, GUI 방식 slice 시간·무게 |
 
 ## 1. 세팅 절차
 
@@ -75,9 +76,19 @@ Project(
 
 ## 2. 설정 결정 순서
 
-순서대로 정하고, 각 단계의 값을 사용자에게 한 줄로 알린다. 재질처럼 기능을 바꾸는 결정은 사용자 확인을 받는다.
+설정은 부품이 하는 일에서 나온다. 같은 PLA 브래킷이라도 서보 비틀림을 받는 것과 보드를 얹기만 하는 것은 벽 수·방향·
+재질이 다르다. 순서대로 정하고, 각 단계의 값을 사용자에게 한 줄로 알린다. 재질처럼 기능을 바꾸는 결정은 사용자 확인을 받는다.
 
-1. **재질** — 부품의 기능(하중 방향·온도·옥외·탄성)으로 고른다. 기본은 `Bambu PLA Basic @BBL P2S`.
+0. **부품 카드** — 설정을 고르기 전에 부품마다 아래를 적는다. 리포의 README·설계 문서·빌드 스크립트 docstring·config
+   주석·메모리를 읽고, 그래도 모르는 칸은 사용자에게 묻는다. 요약을 `Part.role` 에 한 줄로 남기면 build 보고에 설정과
+   같이 찍힌다.
+   - 역할: 무엇을 잡고 어디에 붙는가(서보·보드·카메라·손잡이·덮개)
+   - 하중: 종류(비틀림·굽힘·충격·압축·오래 걸리는 하중), 방향, 크기
+   - 맞물림: 나사(플라스틱에 직접 박는 self-tapping·관통 볼트·열압입 insert), 압입 포켓, 스냅·클립, 미끄럼면,
+     bed 에 닿는 끼워맞춤 면
+   - 환경: 열원(모터·조명·햇빛), 옥외·습기, 손에 쥐는지, 떨어질 수 있는지
+   - 겉모습: 보이는 면, seam 을 숨길 곳
+1. **재질** — 부품 카드의 하중·환경으로 고른다. 기본은 `Bambu PLA Basic @BBL P2S`.
    형상 복원이 필요한 스프링·걸쇠나 60 °C 이상 환경이면 PETG(`Bambu PETG Basic @BBL P2S 0.4 nozzle`),
    유연 부품이면 TPU 95A HF, 내열·옥외는 ASA, 강성·치수 안정은 PLA-CF 를 쓴다. 표는 `references/print-settings.md`.
    profile 이름은 `ls "<profiles>/filament" | grep "@BBL P2S"` 로 확인한다. 이름에 `0.4 nozzle` 이 붙는 재질이 있다.
@@ -86,18 +97,26 @@ Project(
 3. **base process** — `0.20mm Standard @BBL P2S`. 표면이 중요하면 `0.16mm High Quality`·`0.12mm High Quality`,
    나사산·스냅처럼 미세한 부품만 모은 프로젝트면 `0.08mm High Quality`, 빨리 뽑을 시제품이면 `0.24mm Standard`.
    목록은 `ls "<profiles>/process" | grep "P2S"`.
-4. **전역 override** (`Project.process`) — 프로젝트 부품 대부분에 공통인 값만 둔다. 3절 기준값에서 고른다.
-5. **개체별 override** (`Part.params`) — 한 부품만 다른 값. support 가 필요 없는 부품의 `enable_support 0`, 넘어지기
-   쉬운 부품의 brim, 가벼운 부품의 벽·infill 축소.
-6. **출력 방향·배치** — 하중을 층 방향(XY)으로 받게, overhang 과 support 가 적게, 바닥 면적이 넓게 눕힌다.
+4. **전역 override** (`Project.process`) — 프로젝트 부품 대부분의 카드에 공통인 값만 둔다. 3절에서 고른다.
+5. **개체별 override** (`Part.params`) — 카드가 다른 부품만. 하중이 큰 부품의 벽·infill 증가, support 가 필요 없는
+   부품의 `enable_support 0`, 넘어지기 쉬운 부품의 brim, 하중 없는 부품의 벽·infill 축소.
+6. **출력 방향·배치** — 카드의 하중이 층을 벌리지 않게(층과 나란히) 눕힌다. 그다음 overhang·support 가 적게, 바닥 면적이
+   넓게, 끼워맞춤 면이 support·brim 에 닿지 않게.
    support 를 켜기 전에 방향부터 바꾼다. 여러 plate 면 plate 하나 = filament 하나가 기본이다(AMS 없이 spool 교체).
 
-## 3. 부품 유형별 기준값
+## 3. 부품 특성별 기준값
 
-| 부품 | 설정 | 근거 |
+부품 카드의 항목마다 해당하는 줄을 모두 적용한다. 줄끼리 부딪치면 하중·맞물림 쪽을 따른다.
+
+| 카드의 특성 | 설정·재질 | 근거 |
 |---|---|---|
-| 하중을 받는 기능 부품(PLA) | `wall_loops` 4, `sparse_infill_density` 20–25%, `sparse_infill_pattern` gyroid, `enable_support` 1(tree auto), `seam_position` back | 벽 수가 강도에 가장 효과적, gyroid 는 방향을 덜 탄다. 로봇 팔·마운트 부품에 써 온 값 |
-| 덮개·외관 | 벽 2–3, infill 15%, seam back 또는 aligned | system 기본(벽 2·15%)으로 충분 |
+| 서보 혼 비틀림, 외팔보 굽힘처럼 반복되는 큰 하중 | `wall_loops` 4–5, `sparse_infill_density` 25–40% gyroid·cubic, 하중이 층과 나란히 걸리게 눕힘 | 벽이 하중 대부분을 받는다. FDM 은 층 사이(Z)가 층 안보다 몇 배 약하다 |
+| 하중을 받는 일반 기능 부품(PLA) | `wall_loops` 4, `sparse_infill_density` 20–25% gyroid, `enable_support` 1(tree auto), `seam_position` back | 로봇 팔·마운트·그리퍼 부품에 써 온 값 |
+| 플라스틱에 직접 박는 self-tapping 나사 | 구멍 둘레가 벽으로 차게 `wall_loops` 3 이상(0.4 nozzle 에서 1.2 mm 이상) | 나사산이 infill 이 아니라 벽에 물려야 한다 |
+| 압입 포켓·서보 자리·끼워맞춤 | `precise_outer_wall` 1, 그 면에 support·brim 이 닿지 않는 방향, 구멍 보정은 설계 clearance 와 맞춤 | 치수가 기능이다 |
+| 모터·조명 옆, 차 안처럼 50 °C 가까이 | PETG 이상(PLA profile 의 연화 온도 45 °C, PETG 60–70 °C) | 오래 데워진 PLA 는 하중 아래에서 처진다 |
+| 손에 쥐고 다루거나 떨어질 수 있는 부품 | 벽 4, infill 25%. 자주 떨어지면 PLA Tough+ 나 PETG | 충격은 벽과 인성이 받는다 |
+| 덮개·외관·하중 없는 받침 | 벽 2–3, infill 15%, seam back 또는 aligned | system 기본(벽 2·15%)으로 충분 |
 | 나사산·스냅·노브 | `layer_height` 0.08, `sparse_infill_density` 100% (개체별) 또는 0.08mm High Quality 프로젝트 | 출력한 노브·너트·체결 부품이 그대로 맞았다 |
 | 스프링처럼 휘었다 돌아와야 하는 부품 | PETG | PLA 는 오래 휜 채로 두면 변형이 남는다 |
 | 옆면을 누르거나 옆 포켓에 끼우는 부품 | lightning 금지. cubic·gyroid | lightning 은 윗면만 받쳐서 마커 큐브가 타일을 누를 때 부러졌다 |
@@ -126,6 +145,19 @@ Project(
    - GUI Slice 시간이 스크립트가 보고한 시간과 비슷한지
 3. 출력 방향은 3D 뷰어나 overhang 검사로 본다. `Part.down` 을 바꿨으면 overhang 검사를 다시 돌린다.
 4. 형상을 바꾸지 않았으면 3MF 를 다시 만들지 않는다(커밋 노이즈).
+
+### 기존 3MF 검토
+
+이미 만든 3MF 는 `scripts/review_3mf.py <file.3mf> ...` 로 읽는다. 이 도구는 GUI 가 쓰는 값을 보여 준다. GUI 와
+같은 방식(system profile + 바꾼 key + 개체 설정)으로 plate 마다 slice 한 시간·무게, 개체마다 크기·바닥 면적·실제 설정,
+그리고 flag 를 낸다. flag 는 미지원 plate, 개체에 둘 수 없는 key, mesh repair, 좁은 바닥 + 좁은 brim, support 를 끈
+개체의 아래로 향한 면이다.
+
+도구는 숫자만 낸다. 설정이 맞는지는 부품 카드로 판단한다.
+1. 개체 목록으로 부품마다 카드를 만든다(2절 0단계).
+2. 카드와 실제 설정을 3절 표로 맞춰 본다. 부품마다 "역할 · 현재 설정 · 판정 · 권고" 한 줄로 정리한다.
+3. flag 는 카드와 함께 해석한다. 아래로 향한 면 면적에는 구멍 천장과 bridge 도 들어가므로 overhang 검사·뷰어로 확인한다.
+4. 고칠 값은 3MF 가 아니라 생성 스크립트에 넣고 다시 만든다.
 
 ## 5. 기존 스크립트 이전
 
