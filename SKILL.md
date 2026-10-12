@@ -66,6 +66,7 @@ Project(
 | `Part.at` | footprint 중심의 bed 좌표(mm). plate 의 모든 부품에 주거나 모두 비운다(비우면 arranger) |
 | `Plate.tower` | 손으로 배치한 plate 에 filament 가 둘 이상이면 prime tower 모서리 좌표가 필요하다 |
 | `Project.process` | base process 위에 바꾸는 전역 key. GUI 에서 "바꾼 값"으로 보인다 |
+| `Filament.nozzle` | nozzle 이 둘인 기종(H2D·X2D)에서 그 filament 를 쓸 nozzle, `"left"` 또는 `"right"`. 모든 filament 에 주거나 모두 비운다(비우면 studio 가 purge 가 적게 나눔) |
 
 `build()` 는 아래 경우에 멈춘다. GUI 는 모두 말없이 받아들이지만 결과는 틀린다.
 - mesh 가 들어간 그대로가 아니다(repair·삼각형 수 차이)
@@ -103,6 +104,8 @@ Project(
 6. **출력 방향·배치** — 카드의 하중이 층을 벌리지 않게(층과 나란히) 눕힌다. 그다음 overhang·support 가 적게, 바닥 면적이
    넓게, 끼워맞춤 면이 support·brim 에 닿지 않게.
    support 를 켜기 전에 방향부터 바꾼다. 여러 plate 면 plate 하나 = filament 하나가 기본이다(AMS 없이 spool 교체).
+   nozzle 이 둘인 기종에서 한 plate 에 색·재질이 둘이면 nozzle 을 나눈다. 같은 nozzle 에서 바꾸면 purge 가 생긴다
+   (H2D 2색 타일: 같은 nozzle 2.12 g, 나눔 1.85 g). TPU 는 H2D 오른쪽 nozzle 만 받는다.
 
 ## 3. 부품 특성별 기준값
 
@@ -181,6 +184,8 @@ preset 으로 되돌려서 출력에는 문제가 없었지만, 파일만으로 
 - 새 재질·plate·부품 유형에서 얻은 기준값은 3절 표에 근거와 함께 추가한다.
 - Bambu Studio 를 올린 뒤에는 템플릿을 한 번 돌려 본다. CLI 동작(assemble list, 변형 key 목록, `OBJECT_KEYS`)이
   바뀌었을 수 있다. 확인한 버전: Mac Bambu Studio 2.08.03.66.
+- 검증한 기종(0.4 nozzle, CLI build + slice): P2S·X1C·P1S·A1·A1 mini·H2S, nozzle 2개인 H2D·X2D(왼쪽·오른쪽 배정 포함).
+  GUI 확인과 실물 출력은 P2S 만. Ubuntu 는 경로만 들어 있고, Windows 는 `Studio` 경로를 직접 넘겨야 한다(둘 다 미검증).
 - Bambu Studio 를 올리면 `references/print-settings.md` 의 profile 표를 다시 뽑아 대조한다.
 - 이 스킬은 GitHub `woolimi/bambu-3mf` 로 공개돼 있다. 고치면 `~/vault/scripts/publish-skill.sh bambu-3mf "<영어 커밋 메시지>"` 로
   공개 리포에 반영한다. 특정 프로젝트 이름·경로·비공개 자료(Academy 강좌 본문 등)는 넣지 않는다.

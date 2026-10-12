@@ -102,6 +102,21 @@ hotend 변형: P2S profile 은 hotend 종류(Direct Drive Standard / High Flow /
 쓴다(`*_extruder_variant` 가 목록, 첫 값이 Standard). 평탄화한 그대로 넘겨도 단일·다색 plate 모두 slice 되고, GUI 는 프린터의
 `nozzle_volume_type` 으로 값을 고른다. 표의 값을 읽을 때는 각 list 의 첫 값이 표준 hotend 값이다.
 
+## nozzle 이 둘인 기종 (H2D·X2D)
+
+- nozzle 번호는 1 이 왼쪽, 2 가 오른쪽이다. machine profile 의 `extruder_printable_area` 에서 1번은 bed 왼쪽 끝까지, 2번은
+  오른쪽 끝까지 닿고, H2D 의 TPU 전용 변형(`Direct Drive TPU High Flow`)은 2번에만 있다. slice 결과 `slice_info.config` 의
+  filament `group_id` 는 0 이 1번, 1 이 2번 nozzle 이다.
+- `extruder_nozzle_stats`: nozzle 마다 `"<종류>#<개수>"`(예 `["Standard#1", "Standard#1"]`). GUI 는 프린터에서 채우고 CLI 는
+  비워 두는데, 비어 있으면 slice 가 "No valid nozzle found. Please check nozzle count." 로 멈춘다.
+- `flush_volumes_matrix` 는 nozzle 마다 filament 수 × filament 수 표 하나씩, 이어 붙인 길이다. filament 하나짜리 판에서 표가
+  하나뿐이면 slicer 가 표 밖을 읽다가 비정상 종료한다(exit -11). `flush_multiplier` 도 nozzle 마다 하나.
+- 배정은 `filament_map_mode` `"Manual"`, `filament_map`(filament 마다 1·2), `filament_nozzle_map`(0·1), `filament_volume_map`
+  (nozzle 종류, Standard 0)으로 하고, plate 마다 `model_settings` 의 `filament_map_mode`·`filament_maps`·`filament_volume_maps`
+  (공백 구분)도 같이 쓴다. plate 값이 있으면 project 값보다 우선한다.
+- `inherits` 만 적은 preset 으로 export 하면 slice 는 되지만 CLI 가 H2D 를 불러오지 못하고 nozzle 1개짜리 일반 기본값
+  (start G-code `G28` 한 줄)으로 만든다.
+
 ## 함정 모음
 
 | 증상 | 원인 | 대응 |
@@ -112,6 +127,7 @@ hotend 변형: P2S profile 은 hotend 종류(Direct Drive Standard / High Flow /
 | 부품이 plate 를 넘쳐 새 plate 로 감 | CLI 기본 bed 200 mm(평탄화하지 않은 machine) 또는 arranger 의 남은 부품 처리 | 평탄화한 machine 은 256×256 이 들어간다. plate 별 배치는 assemble list |
 | filament 2개 plate 가 "gcode unprintable error_code 4" | 고정 배치 plate 의 prime tower 가 bed 밖(기본 165, 250) | `wipe_tower_x/y` 지정(`Plate.tower`) |
 | `Invalid T command (T65535)` 로그 | P2S end G-code 의 `T65535`(정상) | 무시. 실패 원인은 다른 줄 |
+| H2D·X2D 가 "No valid nozzle found" 또는 exit -11 | `extruder_nozzle_stats` 비어 있음, purge 표가 nozzle 수만큼 없음 | 위 절대로 채운다(`bambu3mf` 가 함) |
 | mesh 삼각형 수가 다름 | studio 가 면적 0 삼각형(float32 에서 꼭짓점 둘이 같은 것)을 버림, 또는 repair | 미리 버리고, repair 가 있으면 빌드를 멈춘다(의도한 공동이 메워진다) |
 | 부품이 공중에 떠서 slice | studio 는 개체를 놓인 높이 그대로 slice | 바닥을 z=0 으로 |
 | 개체별 설정이 안 먹음 | 여러 부품 개체의 부품 단위에만 적힘, 또는 전역 key | 개체 단위에 적고 `OBJECT_KEYS` 로 검사 |

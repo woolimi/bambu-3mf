@@ -82,6 +82,9 @@ OBJECT_KEYS = frozenset("""
 BED_HEAT = {"Textured PEI Plate": "textured_plate_temp", "High Temp Plate": "hot_plate_temp",
             "Engineering Plate": "eng_plate_temp", "Cool Plate": "cool_plate_temp",
             "Supertack Plate": "supertack_plate_temp"}
+# a nozzle by name, and the studio's number for it on a printer of two: the first reaches the bed's left edge,
+# the second its right
+NOZZLES = {"left": 1, "right": 2}
 # what a profile names about itself, not a setting
 PROFILE_META = ("name", "type", "from", "instantiation", "inherits", "include")
 STL_RECORD = np.dtype([("normal", "<f4", 3), ("tri", "<f4", (3, 3)), ("attr", "<u2")])
@@ -101,6 +104,9 @@ class Filament:
     #: a system filament preset, as the studio names it ("Bambu PLA Basic @BBL P2S")
     profile: str
     colour: str = "#FFFFFF"
+    #: on a printer of two nozzles (H2D, X2D), the one this filament runs through: "left" or "right". Give
+    #: every filament one, or none and let the studio share them out to purge least
+    nozzle: str = ""
 
 
 @dataclass
@@ -359,12 +365,49 @@ def with_settings(cfg: dict, project: Project) -> dict:
         if plate.tower is not None:
             cfg["wipe_tower_x"][i], cfg["wipe_tower_y"][i] = (f"{v:g}" for v in plate.tower)
     cfg["filament_colour"] = [f.colour for f in project.filaments]
-    # the command line leaves the purge tables at the printer's four slots: one row and column a filament
+    # the command line leaves the purge tables at the printer's four slots: one row and column a filament, and
+    # on a printer of two nozzles a table a nozzle, or the slicer reads past the end of it
+    nozzles = len(cfg["nozzle_diameter"])
     cfg["flush_volumes_matrix"] = ["0" if i == j else cfg["flush_volumes_matrix"][1]
-                                   for i in range(n) for j in range(n)]
+                                   for _ in range(nozzles) for i in range(n) for j in range(n)]
+    cfg["flush_multiplier"] = (cfg.get("flush_multiplier") or ["1"])[:1] * nozzles
     cfg["flush_volumes_vector"] = cfg["flush_volumes_vector"][:2 * n]
-    cfg["filament_map"] = cfg["filament_map"][:1] * n
+    # how many nozzles of which kind each extruder holds: the GUI has it from the printer, the command line
+    # leaves it empty, and a printer of two nozzles then finds none to slice with
+    if not any(cfg.get("extruder_nozzle_stats") or []):
+        cfg["extruder_nozzle_stats"] = [f"{kind}#{count}" for kind, count
+                                        in zip(cfg["nozzle_volume_type"], cfg["extruder_max_nozzle_count"])]
+    chosen = [f.nozzle for f in project.filaments]
+    if any(chosen):
+        if nozzles != 2:
+            raise SystemExit(f"{project.printer} has {nozzles} nozzle(s): a filament's `nozzle` is for printers of two")
+        if not all(c in NOZZLES for c in chosen):
+            raise SystemExit(f"give every filament a nozzle, {' or '.join(NOZZLES)}: {chosen}")
+        volume = {k: i for i, k in enumerate(("Standard", "High Flow", "TPU High Flow", "Hybrid", "E3D High Flow"))}
+        cfg["filament_map_mode"] = "Manual"
+        cfg["filament_map"] = [str(NOZZLES[c]) for c in chosen]
+        cfg["filament_nozzle_map"] = [str(NOZZLES[c] - 1) for c in chosen]
+        cfg["filament_volume_map"] = [str(volume.get(cfg["nozzle_volume_type"][NOZZLES[c] - 1], 0)) for c in chosen]
+    else:
+        for k in ("filament_map", "filament_nozzle_map", "filament_volume_map"):
+            cfg[k] = (cfg.get(k) or ["1"])[:1] * n
     return cfg
+
+
+def with_plates(ms: str, cfg: dict) -> str:
+    """model_settings with each plate's filament map following the project's: a plate's own map, when it has
+    one, stands over the project's."""
+    if cfg.get("filament_map_mode") != "Manual":
+        return ms
+    rows = (f'\n    <metadata key="filament_map_mode" value="Manual"/>'
+            f'\n    <metadata key="filament_maps" value="{" ".join(cfg["filament_map"])}"/>'
+            f'\n    <metadata key="filament_volume_maps" value="{" ".join(cfg["filament_volume_map"])}"/>')
+
+    def one(m: re.Match) -> str:
+        body = re.sub(r'\n\s*<metadata key="(filament_map_mode|filament_maps|filament_volume_maps)" value="[^"]*"/>', "",
+                      m.group(2))
+        return m.group(1) + rows + body
+    return re.sub(r'(<plate>\s*<metadata key="plater_id" value="\d+"/>)(.*?)(?=</plate>)', one, ms, flags=re.S)
 
 
 def export(project: Project, studio: Studio, out: Path) -> int:
@@ -399,6 +442,7 @@ def export(project: Project, studio: Studio, out: Path) -> int:
     if cfg.get("filament_settings_id") != [f.profile for f in project.filaments]:
         raise SystemExit(f"the studio loaded {cfg.get('filament_settings_id')}, "
                          f"not {[f.profile for f in project.filaments]}")
+    ms = with_plates(ms, cfg)
     files["Metadata/model_settings.config"] = ms.encode()
     files["Metadata/project_settings.config"] = json.dumps(cfg, indent=4).encode()
     out.parent.mkdir(parents=True, exist_ok=True)
@@ -445,7 +489,7 @@ def report(out: Path, project: Project, plates: list[Sliced]) -> None:
     changed = ", ".join(f"{k} {v}" for k, v in project.process.items()) or "nothing"
     print(f"{out.name}: {project.printer} / {project.base_process} + {changed} / {project.bed_type}")
     for i, f in enumerate(project.filaments, start=1):
-        print(f"  filament {i}: {f.profile} {f.colour}")
+        print(f"  filament {i}: {f.profile} {f.colour}{', ' + f.nozzle + ' nozzle' if f.nozzle else ''}")
     for p, plate in zip(plates, project.plates):
         used = ", ".join(f"f{i} {m:.1f} m" for i, m in sorted(p.metres.items()))
         print(f"  plate {p.plate}: {round(p.minutes) // 60} h {round(p.minutes) % 60:02d} min, {p.grams:.1f} g ({used})")

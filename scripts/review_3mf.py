@@ -124,7 +124,9 @@ def plates(ms: str, names: dict[str, str]) -> list[dict]:
 
 
 # where the project put each plate's prime tower and how much it purges: the project's own, not a preset's
-PLACED = ("wipe_tower_x", "wipe_tower_y", "flush_volumes_matrix", "flush_volumes_vector", "flush_multiplier")
+PLACED = ("wipe_tower_x", "wipe_tower_y", "flush_volumes_matrix", "flush_volumes_vector", "flush_multiplier",
+          "extruder_nozzle_stats", "filament_map_mode", "filament_map", "filament_nozzle_map", "filament_volume_map",
+          "filament_colour")
 # what a key is when no profile names it
 DEFAULTS = {"brim_type": "auto_brim"}
 

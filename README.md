@@ -16,7 +16,7 @@ left in English. The Python module and its docstrings are in English.
 - **Settings the GUI keeps.** Changed process keys are listed in `different_settings_to_system`, so Bambu Studio
   shows them as changes on top of the system preset instead of resetting them.
 - **Per-part control.** Orientation (`down`, `turn`), per-object settings, multi-part / multi-colour objects,
-  fixed or arranged placement, and the prime tower position.
+  fixed or arranged placement, the prime tower position, and the left or right nozzle on two-nozzle printers.
 - **Checks before writing.** The build stops if the studio repaired or dropped triangles, if a global-only key was
   set on an object, if a process key is misspelled, if a filament cannot stick to the chosen plate, or if a plate
   does not slice. On success it prints each plate's time, weight and filament length.
@@ -76,8 +76,16 @@ out = Path("print/parts.3mf")
 report(out, project, build(project, studio, out))
 ```
 
-The defaults are a P2S with a 0.4 mm nozzle, `0.20mm Standard @BBL P2S` and the Textured PEI plate. Other Bambu
-printers should work with the matching preset names, but only the P2S has been tested.
+The defaults are a P2S with a 0.4 mm nozzle, `0.20mm Standard @BBL P2S` and the Textured PEI plate. Set `printer`,
+`base_process` and the filament presets for another printer.
+
+| Tested (0.4 nozzle, build and slice through the CLI) | Notes |
+|---|---|
+| P2S, X1 Carbon, P1S, A1, A1 mini, H2S | single nozzle |
+| H2D, X2D | two nozzles; `Filament(..., nozzle="left" / "right")` assigns each filament, or leave all empty for the studio's choice |
+
+Opened in the GUI and printed: P2S only. macOS is tested; Linux paths are built in (extracted AppImage) and Windows
+needs the studio's paths passed in; neither has been run yet.
 
 ## License
 
