@@ -133,19 +133,17 @@ def sliced(path: Path, studio: b.Studio, printer: str, base: str, changed: dict,
            cfg: dict) -> dict:
     """The project sliced with the system printer, process and filaments and the listed changes."""
     machine = b.flattened(studio, "machine", printer)
-    variant = f"{machine['extruder_type'][0]} {machine['default_nozzle_volume_type'][0]}"
-    process = b.one_hotend(b.flattened(studio, "process", base), "process", variant)
+    process = b.flattened(studio, "process", base)
     for k, v in changed.items():
         process[k] = [str(v)] * len(process[k]) if isinstance(process.get(k), list) else v
     process.update({k: cfg[k] for k in PLACED if k in cfg})
     with tempfile.TemporaryDirectory() as tmp:
         work = Path(tmp)
-        (work / "m.json").write_text(json.dumps(b.one_hotend(machine, "machine", variant)))
+        (work / "m.json").write_text(json.dumps(machine))
         (work / "p.json").write_text(json.dumps(process))
         files = []
         for i, f in enumerate(filaments):
-            (work / f"f{i}.json").write_text(json.dumps(b.one_hotend(b.flattened(studio, "filament", f),
-                                                                     "filament", variant)))
+            (work / f"f{i}.json").write_text(json.dumps(b.flattened(studio, "filament", f)))
             files.append(str(work / f"f{i}.json"))
         run = b.run(studio, ["--load-settings", f"{work / 'm.json'};{work / 'p.json'}",
                              "--load-filaments", ";".join(files), "--slice", "0",

@@ -84,48 +84,6 @@ BED_HEAT = {"Textured PEI Plate": "textured_plate_temp", "High Temp Plate": "hot
             "Supertack Plate": "supertack_plate_temp"}
 # what a profile names about itself, not a setting
 PROFILE_META = ("name", "type", "from", "instantiation", "inherits", "include")
-# A profile holds some values once for each hotend the printer may carry (standard, high flow, ...), listed in
-# its *_extruder_variant key; the GUI takes the printer's one. These are those keys, with how many values each
-# hotend has (the machine limits come twice: normal and silent).
-VARIANTS = {
-    "process": ("print_extruder_variant", {k: 1 for k in """
-        initial_layer_speed initial_layer_infill_speed outer_wall_speed inner_wall_speed small_perimeter_speed
-        small_perimeter_threshold sparse_infill_speed internal_solid_infill_speed vertical_shell_speed
-        top_surface_speed enable_overhang_speed overhang_1_4_speed overhang_2_4_speed overhang_3_4_speed
-        overhang_4_4_speed overhang_totally_speed enable_height_slowdown slowdown_start_height slowdown_start_speed
-        slowdown_start_acc slowdown_end_height slowdown_end_speed slowdown_end_acc bridge_speed gap_infill_speed
-        support_speed support_interface_speed travel_speed travel_speed_z default_acceleration travel_acceleration
-        travel_short_distance_acceleration initial_layer_travel_acceleration initial_layer_acceleration
-        outer_wall_acceleration inner_wall_acceleration sparse_infill_acceleration top_surface_acceleration
-        print_extruder_id print_extruder_variant top_solid_infill_flow_ratio""".split()}),
-    "filament": ("filament_extruder_variant", {k: 1 for k in """
-        filament_flow_ratio filament_max_volumetric_speed filament_ramming_volumetric_speed
-        filament_pre_cooling_temperature filament_ramming_travel_time filament_ramming_volumetric_speed_nc
-        filament_pre_cooling_temperature_nc filament_ramming_travel_time_nc filament_extruder_variant
-        filament_retraction_length filament_retract_length_nc filament_z_hop filament_z_hop_types
-        filament_retract_restart_extra filament_retraction_speed filament_deretraction_speed
-        filament_retraction_minimum_travel filament_retract_when_changing_layer filament_wipe filament_wipe_distance
-        filament_retract_before_wipe filament_long_retractions_when_cut filament_retraction_distances_when_cut
-        long_retractions_when_ec retraction_distances_when_ec nozzle_temperature_initial_layer nozzle_temperature
-        filament_flush_volumetric_speed filament_flush_temp filament_flush_temp_fast filament_enable_overhang_speed
-        filament_bridge_speed filament_overhang_1_4_speed filament_overhang_2_4_speed filament_overhang_3_4_speed
-        filament_overhang_4_4_speed filament_overhang_totally_speed override_process_overhang_speed
-        volumetric_speed_coefficients filament_adaptive_volumetric_speed filament_preheat_temperature_delta
-        filament_cooling_before_tower slow_down_min_speed""".split()}),
-    "machine": ("printer_extruder_variant", {
-        **{k: 1 for k in """
-            nozzle_volume retraction_length z_hop retract_lift_above retract_lift_below z_hop_types retraction_speed
-            deretraction_speed retraction_minimum_travel retract_when_changing_layer wipe wipe_distance
-            retract_before_wipe retract_length_toolchange retract_restart_extra retract_restart_extra_toolchange
-            long_retractions_when_cut retraction_distances_when_cut printer_extruder_id printer_extruder_variant
-            hotend_cooling_rate hotend_heating_rate nozzle_flush_dataset""".split()},
-        **{k: 2 for k in """
-            machine_max_acceleration_x machine_max_acceleration_y machine_max_acceleration_z
-            machine_max_acceleration_e machine_max_acceleration_extruding machine_max_acceleration_retracting
-            machine_max_acceleration_travel machine_max_speed_x machine_max_speed_y machine_max_speed_z
-            machine_max_speed_e machine_max_jerk_x machine_max_jerk_y machine_max_jerk_z
-            machine_max_jerk_e""".split()}}),
-}
 STL_RECORD = np.dtype([("normal", "<f4", 3), ("tri", "<f4", (3, 3)), ("attr", "<u2")])
 DOWN = np.array([0.0, 0.0, -1.0])
 
@@ -214,30 +172,10 @@ def flattened(studio: Studio, kind: str, name: str) -> dict:
     return out
 
 
-def one_hotend(profile: dict, kind: str, variant: str) -> dict:
-    """The profile with only `variant`'s values (say "Direct Drive Standard"), as the GUI reads it for a printer
-    with that hotend. Left with every hotend's, the command line cannot map two filaments on one plate."""
-    listed, keys = VARIANTS[kind]
-    variants = profile.get(listed) or []
-    if len(variants) <= 1:
-        return profile
-    if variant not in variants:
-        raise SystemExit(f"{profile.get('name')}: no values for a {variant} hotend, only {variants}")
-    i, out = variants.index(variant), dict(profile)
-    for k, width in keys.items():
-        v = out.get(k)
-        if isinstance(v, list) and len(v) == len(variants) * width:
-            out[k] = v[i * width:(i + 1) * width]
-    return out
-
-
 def profiles(project: Project, studio: Studio) -> tuple[dict, dict, list[dict]]:
-    """The printer's, the process's and each filament's profile, flattened, for the printer's own hotend."""
-    machine = flattened(studio, "machine", project.printer)
-    variant = f"{machine['extruder_type'][0]} {machine['default_nozzle_volume_type'][0]}"
-    return (one_hotend(machine, "machine", variant),
-            one_hotend(flattened(studio, "process", project.base_process), "process", variant),
-            [one_hotend(flattened(studio, "filament", f.profile), "filament", variant) for f in project.filaments])
+    """The printer's, the process's and each filament's profile, flattened."""
+    return (flattened(studio, "machine", project.printer), flattened(studio, "process", project.base_process),
+            [flattened(studio, "filament", f.profile) for f in project.filaments])
 
 
 def read_tris(path: Path) -> np.ndarray:

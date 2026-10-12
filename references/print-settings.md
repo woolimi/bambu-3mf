@@ -1,7 +1,7 @@
 # 출력 설정 근거 — Bambu Lab P2S
 
 수치는 Bambu Studio 2.08.03 에 들어 있는 P2S system profile 을 평탄화해 표준 hotend 값으로 읽은 것이다
-(`bambu3mf.flattened` + `one_hotend`). 규칙은 공개된 Bambu Lab Wiki(`https://wiki.bambulab.com/en/...`, 한국어 `/ko/...`)와
+(`bambu3mf.flattened`, 각 list 의 첫 값). 규칙은 공개된 Bambu Lab Wiki(`https://wiki.bambulab.com/en/...`, 한국어 `/ko/...`)와
 실제 출력 경험에서 왔다. 값이 의심스러우면 profile 을 직접 다시 읽는다. profile 이 정본이다.
 
 ## 재질별 profile 값 (P2S 0.4 nozzle, Direct Drive Standard)

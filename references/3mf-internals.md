@@ -99,10 +99,8 @@ CLI 는 `--load-settings` 로 받은 JSON 에 적힌 key 만 읽고 나머지는
 제외) → 자기 key 다. P2S machine 은 start·end·layer change·filament change G-code 를 `include` template 으로 가져온다.
 
 hotend 변형: P2S profile 은 hotend 종류(Direct Drive Standard / High Flow / E3D High Flow)마다 값을 하나씩 가진 list 를
-쓴다(`*_extruder_variant` 가 목록). 평탄화한 그대로 넘기면 filament 둘을 한 plate 에 올린 프로젝트가 slice 되지 않아서,
-machine 의 `extruder_type` + `default_nozzle_volume_type` 으로 고른 변형(P2S 기본 "Direct Drive Standard") 하나만 남긴다.
-변형별 key 목록은 `PrintConfig.cpp` 의 `print_options_with_variant`·`filament_options_with_variant`·
-`printer_options_with_variant_1`(machine 최대 속도·가속은 `_2`, normal·silent 두 값)이다.
+쓴다(`*_extruder_variant` 가 목록, 첫 값이 Standard). 평탄화한 그대로 넘겨도 단일·다색 plate 모두 slice 되고, GUI 는 프린터의
+`nozzle_volume_type` 으로 값을 고른다. 표의 값을 읽을 때는 각 list 의 첫 값이 표준 hotend 값이다.
 
 ## 함정 모음
 
@@ -112,7 +110,7 @@ machine 의 `extruder_type` + `default_nozzle_volume_type` 으로 고른 변형(
 | CLI slice 시간이 실제의 2.5배, 무게 0 g | 평탄화하지 않은 profile 로 export | 평탄화 |
 | P2S 프로젝트가 Cool Plate | `curr_bed_type` 기본값 | 지정 |
 | 부품이 plate 를 넘쳐 새 plate 로 감 | CLI 기본 bed 200 mm(평탄화하지 않은 machine) 또는 arranger 의 남은 부품 처리 | 평탄화한 machine 은 256×256 이 들어간다. plate 별 배치는 assemble list |
-| filament 2개 plate 가 "gcode unprintable error_code 4" | 고정 배치 plate 의 prime tower 가 bed 밖, 또는 hotend 변형이 남은 profile | `wipe_tower_x/y` 지정, 변형 하나로 |
+| filament 2개 plate 가 "gcode unprintable error_code 4" | 고정 배치 plate 의 prime tower 가 bed 밖(기본 165, 250) | `wipe_tower_x/y` 지정(`Plate.tower`) |
 | `Invalid T command (T65535)` 로그 | P2S end G-code 의 `T65535`(정상) | 무시. 실패 원인은 다른 줄 |
 | mesh 삼각형 수가 다름 | studio 가 면적 0 삼각형(float32 에서 꼭짓점 둘이 같은 것)을 버림, 또는 repair | 미리 버리고, repair 가 있으면 빌드를 멈춘다(의도한 공동이 메워진다) |
 | 부품이 공중에 떠서 slice | studio 는 개체를 놓인 높이 그대로 slice | 바닥을 z=0 으로 |
