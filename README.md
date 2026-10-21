@@ -1,5 +1,7 @@
 # bambu-3mf
 
+![Eight STL parts built into a two-plate P2S project, opened and sliced in Bambu Studio, then reviewed](docs/demo.gif)
+
 Give Claude Code your STL parts and get Bambu Studio projects (`.3mf`) that open ready to print: the printer's real
 start G-code, speeds and filament data, settings for each part chosen from what that part does, and the time and
 weight of every plate. Bambu Studio's own command line writes, checks and slices each project. Left to itself, that
