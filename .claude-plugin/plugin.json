@@ -1,0 +1,11 @@
+{
+  "name": "bambu-3mf",
+  "version": "1.0.0",
+  "description": "Print-ready Bambu Studio projects (.3mf) from STL parts, written by the studio's own CLI from flattened system profiles, then checked and sliced plate by plate. Also reviews existing 3MF files.",
+  "author": { "name": "Woolim Park", "url": "https://github.com/woolimi" },
+  "homepage": "https://github.com/woolimi/bambu-3mf",
+  "repository": "https://github.com/woolimi/bambu-3mf",
+  "license": "MIT",
+  "keywords": ["bambu-lab", "bambu-studio", "3mf", "3d-printing", "slicer", "p2s", "stl"],
+  "skills": ["./"]
+}

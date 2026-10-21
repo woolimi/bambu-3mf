@@ -1,8 +1,15 @@
 # bambu-3mf
 
-A Claude Code skill that turns STL parts made in code into Bambu Studio projects (`.3mf`) that open ready to slice
-and print on a **Bambu Lab P2S**. Bambu Studio's own command line writes each project from the system profiles,
-checks it, and slices it plate by plate.
+Give Claude Code your STL parts and get Bambu Studio projects (`.3mf`) that open ready to print: the printer's real
+start G-code, speeds and filament data, settings for each part chosen from what that part does, and the time and
+weight of every plate. Bambu Studio's own command line writes, checks and slices each project. Left to itself, that
+command line writes 500 mm/s² acceleration, filament density 0 and a Cool Plate into the file; the skill flattens the
+system profiles first so it does not.
+
+Built for the **Bambu Lab P2S**; also builds and slices for the X1 Carbon, P1S, A1, A1 mini, H2S, H2D and X2D.
+
+Checking a 3MF you already have needs no Claude: `python3 scripts/review_3mf.py part.3mf` prints the settings the
+GUI will print with, flags what to look at, and slices it.
 
 The skill's documents (`SKILL.md`, `references/`) are written in Korean. Technical terms and every setting key are
 left in English. The Python module and its docstrings are in English.
@@ -34,6 +41,21 @@ left in English. The Python module and its docstrings are in English.
 
 ## Install
 
+As a Claude Code plugin:
+
+```
+/plugin install bambu-3mf --marketplace woolimi/bambu-3mf
+```
+
+Before Claude Code 2.1.275, add the marketplace first:
+
+```
+/plugin marketplace add woolimi/bambu-3mf
+/plugin install bambu-3mf@bambu-3mf
+```
+
+Or as a plain skill:
+
 ```bash
 git clone https://github.com/woolimi/bambu-3mf ~/.claude/skills/bambu-3mf
 ```
@@ -45,10 +67,10 @@ Requirements:
 ## Use
 
 Ask Claude Code for a 3MF of your printed parts ("make a 3MF of these parts", "출력 파일 만들어줘") or for a
-review of one ("review this 3MF", "이 3MF 검토해줘"), or use the files directly:
+review of one ("review this 3MF", "이 3MF 검토해줘"), or run the review from a clone of this repo:
 
 ```bash
-python3 ~/.claude/skills/bambu-3mf/scripts/review_3mf.py print/*.3mf
+python3 bambu-3mf/scripts/review_3mf.py print/*.3mf
 ```
 
 To write projects from your own build:
@@ -86,6 +108,12 @@ The defaults are a P2S with a 0.4 mm nozzle, `0.20mm Standard @BBL P2S` and the 
 
 Opened in the GUI and printed: P2S only. macOS is tested; Linux paths are built in (extracted AppImage) and Windows
 needs the studio's paths passed in; neither has been run yet.
+
+## Related
+
+[print-part-design](https://github.com/woolimi/print-part-design) comes before this skill: a browser 3D viewer for
+parts made in code, fit checks for servos and boards, and shape cleanup for printing. Its STL output is what
+`bambu-3mf` takes in.
 
 ## License
 

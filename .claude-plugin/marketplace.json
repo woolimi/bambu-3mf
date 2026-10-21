@@ -1,0 +1,16 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "bambu-3mf",
+  "description": "Bambu Studio 3MF projects from STL parts, built and sliced through the studio's CLI.",
+  "owner": { "name": "Woolim Park", "url": "https://github.com/woolimi" },
+  "plugins": [
+    {
+      "name": "bambu-3mf",
+      "description": "Print-ready Bambu Studio projects (.3mf) from STL parts, checked and sliced plate by plate. Also reviews existing 3MF files.",
+      "source": "./",
+      "category": "productivity",
+      "homepage": "https://github.com/woolimi/bambu-3mf",
+      "tags": ["bambu-lab", "bambu-studio", "3mf", "3d-printing", "slicer"]
+    }
+  ]
+}
